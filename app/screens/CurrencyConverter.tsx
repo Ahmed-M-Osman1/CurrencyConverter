@@ -1,91 +1,92 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-import CurrencySelector from '../components/CurrencySelector';
-import CurrencyInput from '../components/CurrencyInput';
-
-const exchangeRates = [
-    { currency: 'USD', rate: 1 },
-    { currency: 'EUR', rate: 0.85 },
-    { currency: 'GBP', rate: 0.75 },
-    { currency: 'JPY', rate: 110 },
-    { currency: 'INR', rate: 73 },
-    { currency: 'AUD', rate: 1.35 },
-    { currency: 'CAD', rate: 1.25 },
-    { currency: 'CNY', rate: 6.45 },
-    { currency: 'BRL', rate: 5.3 },
-];
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import CurrencySelector from "../components/CurrencySelector";
+import CurrencyInput from "../components/CurrencyInput";
+import ExchangeRate from "@/constants/ExchangeRate";
 
 export default function CurrencyConverter() {
-    const [sourceCurrency, setSourceCurrency] = useState('USD');
-    const [targetCurrency, setTargetCurrency] = useState('EUR');
-    const [amount, setAmount] = useState('');
-    const [convertedAmount, setConvertedAmount] = useState(null);
+  const [sourceCurrency, setSourceCurrency] = useState("USD");
+  const [targetCurrency, setTargetCurrency] = useState("EUR");
+  const [sourceCurrencyAmount, setSourceCurrencyAmount] = useState<string>("");
+  const [targetCurrencyAmount, setTargetCurrencyAmount] = useState<string>("");
 
-    const handleConversion = () => {
-        if (isNaN(amount) || parseFloat(amount) <= 0) {
-            alert('Please enter a valid amount.');
-            return;
-        }
-        if (sourceCurrency === targetCurrency) {
-            alert('Source and Target currencies cannot be the same.');
-            return;
-        }
+  const convertCurrency = (
+    amount: string,
+    setState: (value: string) => void,
+    isTarget: boolean,
+  ) => {
+    if (!amount || isNaN(Number(amount))) {
+      setState("");
+      return;
+    }
 
-        const sourceRate = exchangeRates.find((item) => item.currency === sourceCurrency)?.rate || 0;
-        const targetRate = exchangeRates.find((item) => item.currency === targetCurrency)?.rate || 0;
-        const result = (parseFloat(amount) * targetRate) / sourceRate;
-        setConvertedAmount(result.toFixed(2));
-    };
+    const sourceRate = ExchangeRate.find(
+      (item) => item.currency === sourceCurrency,
+    )?.rate;
+    const targetRate = ExchangeRate.find(
+      (item) => item.currency === targetCurrency,
+    )?.rate;
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Currency Converter</Text>
+    if (sourceRate && targetRate) {
+      const finalAmount =
+        (parseFloat(amount) / (isTarget ? targetRate : sourceRate)) *
+        (isTarget ? sourceRate : targetRate);
+      setState(finalAmount.toFixed(2));
+    }
+  };
 
-            <CurrencySelector
-                label="Source Currency"
-                value={sourceCurrency}
-                onValueChange={setSourceCurrency}
-                exchangeRates={exchangeRates}
-            />
+  const handleSourceAmountChange = (amount: string) => {
+    setSourceCurrencyAmount(amount);
+    convertCurrency(amount, setTargetCurrencyAmount, false);
+  };
 
-            <CurrencySelector
-                label="Target Currency"
-                value={targetCurrency}
-                onValueChange={setTargetCurrency}
-                exchangeRates={exchangeRates}
-            />
+  const handleTargetAmountChange = (amount: string) => {
+    setTargetCurrencyAmount(amount);
+    convertCurrency(amount, setSourceCurrencyAmount, true);
+  };
 
-            <CurrencyInput
-                label={`Amount in ${sourceCurrency}`}
-                value={amount}
-                onChange={setAmount}
-            />
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Currency Converter</Text>
+      <Text>Start typing to get your currency change</Text>
+      <CurrencySelector
+        label="Source Currency"
+        value={sourceCurrency}
+        onValueChange={setSourceCurrency}
+        exchangeRates={ExchangeRate}
+      />
 
-            <Button title="Convert" onPress={handleConversion} />
+      <CurrencyInput
+        label={`Amount in ${sourceCurrency}`}
+        value={sourceCurrencyAmount}
+        onChange={handleSourceAmountChange}
+      />
 
-            {convertedAmount !== null && (
-                <Text style={styles.result}>
-                    {amount} {sourceCurrency} = {convertedAmount} {targetCurrency}
-                </Text>
-            )}
-        </View>
-    );
+      <CurrencySelector
+        label="Target Currency"
+        value={targetCurrency}
+        onValueChange={setTargetCurrency}
+        exchangeRates={ExchangeRate}
+      />
+
+      <CurrencyInput
+        label={`Amount in ${targetCurrency}`}
+        value={targetCurrencyAmount}
+        onChange={handleTargetAmountChange}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 20,
-    },
-    title: {
-        fontSize: 24,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    result: {
-        fontSize: 18,
-        textAlign: 'center',
-        marginTop: 20,
-    },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 20,
+  },
 });
